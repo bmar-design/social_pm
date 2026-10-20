@@ -1,5 +1,9 @@
 # Working hosted group app
 
+The native iPhone beta foundation is in [mobile/](mobile/README.md). It includes
+Expo/Privy integration and uses the hosted API; provider configuration, a signed
+device build and the [release checks](mobile/RELEASE.md) remain before distribution.
+
 The shared application is now in [hosted/](hosted/), with platform sign-in,
 D1-backed private groups, invite links, Pascal market proposals and Tail/Fade
 responses. The root Python app below is the earlier prototype; it does not

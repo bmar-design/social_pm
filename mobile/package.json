@@ -1,0 +1,41 @@
+{
+  "name": "social-plays-mobile",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start --dev-client",
+    "ios": "expo run:ios",
+    "typecheck": "tsc --noEmit",
+    "export:ios": "expo export --platform ios",
+    "test": "node --experimental-strip-types --test tests/*.test.mts"
+  },
+  "dependencies": {
+    "@ethersproject/shims": "^5.8.0",
+    "@privy-io/expo": "^0.76.5",
+    "@privy-io/expo-native-extensions": "^0.0.12",
+    "expo": "^55.0.31",
+    "expo-apple-authentication": "~55.0.17",
+    "expo-application": "~55.0.19",
+    "expo-clipboard": "~55.0.17",
+    "expo-crypto": "~55.0.19",
+    "expo-dev-client": "~55.0.40",
+    "expo-linking": "~55.0.17",
+    "expo-secure-store": "~55.0.18",
+    "expo-status-bar": "~55.0.6",
+    "expo-web-browser": "~55.0.20",
+    "fast-text-encoding": "^1.0.6",
+    "react": "19.2.0",
+    "react-native": "0.83.10",
+    "react-native-get-random-values": "~1.11.0",
+    "react-native-passkeys": "^0.4.2",
+    "react-native-qrcode-styled": "^0.3.3",
+    "react-native-safe-area-context": "~5.6.2",
+    "react-native-svg": "15.15.3",
+    "react-native-webview": "13.16.0"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.10",
+    "typescript": "^5.9.3"
+  },
+  "private": true
+}
