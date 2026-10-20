@@ -1,5 +1,25 @@
 # Social Plays for iPhone
 
+## Just preview the screens on your phone
+
+Run `npm run preview`, keep the Mac and iPhone on the same Wi-Fi, then open
+`http://<your-Mac-Wi-Fi-IP>:8083` in iPhone Safari. This renders the actual React
+Native screens through React Native Web with fictional games, groups and plays.
+It starts signed in as a sample profile. No backend, Privy setup, Apple account
+or native build is needed. Changes reset when the preview server/page reloads.
+
+The preview command enables a dedicated mock API and Metro aliases for auth and
+storage. Normal `npm start`, iOS exports and production builds retain real Privy
+authentication. Keep `EXPO_PUBLIC_UI_PREVIEW` out of production environments.
+
+The mobile layout has Home, Groups and Profile icon tabs. Home is restricted to
+NCAA Football and shows team logos and both market percentages. Market detail
+shows two-sided probability history with period controls. Preview histories are
+illustrative; connected mode uses API candles and displays an unavailable state
+when history is missing. Posts have a streamlined Tail/Fade layout without visible
+block/report buttons. Those backend endpoints remain available. Play history is
+under Profile; account settings expand separately.
+
 Native Expo/React Native application using the existing `hosted/` API. This is a
 practice-trading beta foundation, not a live-money release. The native UI includes
 games, private groups, opinions, practice buy/review/confirm, optional sharing,

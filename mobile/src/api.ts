@@ -1,6 +1,7 @@
 export const apiUrl = (process.env.EXPO_PUBLIC_API_URL || '').replace(/\/$/, '');
 export type Api = <T = any>(path: string, body?: unknown) => Promise<T>;
 export function createApi(getToken: () => Promise<string | null>): Api {
+  if (process.env.EXPO_PUBLIC_UI_PREVIEW === 'true') return previewApi;
   return async <T,>(path: string, body?: unknown): Promise<T> => {
     if (!apiUrl || !/^https:\/\//.test(apiUrl)) throw Error('Configure an HTTPS app API URL first.');
     const token = await getToken();
@@ -17,3 +18,4 @@ export function createApi(getToken: () => Promise<string | null>): Api {
     return result as T;
   };
 }
+import { previewApi } from './preview/api';

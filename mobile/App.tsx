@@ -8,8 +8,9 @@ import { MobileApp } from './src/MobileApp';
 import { styles } from './src/ui';
 
 export default function App() {
-  const appId = process.env.EXPO_PUBLIC_PRIVY_APP_ID;
-  const clientId = process.env.EXPO_PUBLIC_PRIVY_CLIENT_ID;
+  const preview = process.env.EXPO_PUBLIC_UI_PREVIEW === 'true';
+  const appId = preview ? 'ui-preview' : process.env.EXPO_PUBLIC_PRIVY_APP_ID;
+  const clientId = preview ? 'ui-preview' : process.env.EXPO_PUBLIC_PRIVY_CLIENT_ID;
   return <SafeAreaProvider><StatusBar style="light" />{appId && clientId ?
     <PrivyProvider appId={appId} clientId={clientId}><MobileApp /><PrivyElements /></PrivyProvider> :
     <SafeAreaView style={styles.page}><View style={styles.content}><Text style={styles.title}>Social Plays</Text>

@@ -4,6 +4,13 @@ config.watchFolders = [require('path').resolve(__dirname, '../hosted/lib')];
 config.resolver.unstable_enablePackageExports = true;
 // Privy's documented Metro compatibility settings for its transitive packages.
 config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (process.env.EXPO_PUBLIC_UI_PREVIEW === 'true') {
+    const path = require('path');
+    if (moduleName === '@privy-io/expo' || moduleName === '@privy-io/expo/ui')
+      return { type: 'sourceFile', filePath: path.resolve(__dirname, 'src/preview/auth.tsx') };
+    if (moduleName === 'expo-secure-store')
+      return { type: 'sourceFile', filePath: path.resolve(__dirname, 'src/preview/storage.ts') };
+  }
   if (moduleName === 'isows' || moduleName.startsWith('zustand')) {
     const next = { ...context, unstable_enablePackageExports: false };
     return next.resolveRequest(next, moduleName, platform);

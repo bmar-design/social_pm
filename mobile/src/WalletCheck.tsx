@@ -8,7 +8,7 @@ import { Button, styles } from './ui';
 export function WalletCheck({ run, busy }: { run: (fn: () => Promise<unknown>) => void; busy: boolean }) {
   const wallet = useEmbeddedSolanaWallet();
   const [result, setResult] = useState('');
-  if (!__DEV__) return null;
+  if (!__DEV__ || process.env.EXPO_PUBLIC_UI_PREVIEW === 'true') return null;
   return <View style={styles.card}><Text style={styles.heading}>Wallet integration check</Text><Text style={styles.muted}>Development only. Creates a Solana wallet and signs a diagnostic message. Keep this wallet unfunded. Pascal compatibility still requires a separate integration check.</Text>
     <Text style={styles.muted}>Status: {wallet.status}</Text>
     {wallet.wallets?.[0] && <Text selectable style={styles.muted}>{wallet.wallets[0].address}</Text>}
