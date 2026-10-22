@@ -26,3 +26,8 @@ export function Field({ label, ...props }: TextInputProps & { label: string }) {
   return <View style={{ gap: 6 }}><Text style={styles.muted}>{label}</Text><TextInput accessibilityLabel={label} placeholderTextColor={colors.muted} style={styles.input} {...props} /></View>;
 }
 export const money = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+
+export function StanceButton({stance,count,selected,disabled,onPress}:{stance:'tail'|'fade';count:number;selected:boolean;disabled:boolean;onPress:()=>void}) {
+  const palette=stance==='tail'?{bg:'#e0f1e3',border:'#8dbb98',text:'#28633a'}:{bg:'#fbe2df',border:'#d9a09a',text:'#963c36'};
+  return <Pressable accessibilityRole="button" accessibilityState={{selected,disabled}} disabled={disabled} onPress={onPress} style={({pressed})=>({flex:1,minHeight:44,paddingHorizontal:10,alignItems:'center',justifyContent:'center',borderRadius:10,borderWidth:1,borderColor:selected?palette.border:colors.border,backgroundColor:selected||pressed?palette.bg:colors.card,opacity:disabled?.55:1})}><Text style={{fontSize:13,fontWeight:'600',color:selected?palette.text:colors.muted}}>{stance==='tail'?'↗ Tail':'↘ Fade'} · {count}</Text></Pressable>;
+}

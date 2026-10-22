@@ -144,3 +144,11 @@ The capital chart displays purchase cost, not historical P&L. History loads all
 backend pages (200 trades per page), supports filtering and receipts, and exports
 CSV through a web download or native sharing. Deploy the updated history API
 with the mobile changes to load more than the previous 100-trade limit.
+
+## Glass navigation
+
+The floating navigation, Chat/Positions switch, and chat composer use native
+`expo-glass-effect` on supported iOS builds, with a solid fallback for older
+platforms and Reduce Transparency. Safari preview uses CSS backdrop blur with
+an opaque fallback. Rebuild the native development client after installing the
+new module (`npm run ios`); restarting Metro alone does not add native modules.

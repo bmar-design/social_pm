@@ -20,6 +20,7 @@
     "expo-clipboard": "~55.0.17",
     "expo-crypto": "~55.0.19",
     "expo-dev-client": "~55.0.40",
+    "expo-glass-effect": "~55.0.11",
     "expo-linking": "~55.0.17",
     "expo-secure-store": "~55.0.18",
     "expo-status-bar": "~55.0.6",

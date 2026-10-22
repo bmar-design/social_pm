@@ -16,7 +16,7 @@ const markets = [makeMarket('SAMPLE-MICH', 'Michigan', 'Michigan State', .62, 5)
 ]);
 const invite = '12345678-1234-1234-1234-123456789abc'.repeat(2);
 let name = 'Brian';
-const groups = [{ id: 'oakland', name: '928 Oakland', owner: 'preview-brian', created: now, memberCount: 6, proposalCount: 2, invite }, { id: 'saturdays', name: 'Saturday people', owner:'preview-alex', created:now, memberCount:4, proposalCount:1, invite }];
+const groups = [{ id: 'oakland', name: '928 Oakland', owner: 'preview-brian', created: now, memberCount: 6, proposalCount: 2, invite }, { id: 'saturdays', name: 'Saturday people', owner:'preview-alex', created:now, memberCount:4, proposalCount:1, invite:'abcdef12-1234-1234-1234-123456789abc'.repeat(2) }];
 let proposals: any[] = [
   {id:'post-alex',trade_id:'sample-alex-buy',tradeContracts:20,tradeCost:1260,tradePrice:630000,tradeCreated:now-1800000,group_id:'oakland',author:'preview-alex',authorName:'Alex',symbol:markets[0].id,event:markets[0].event,title:'Michigan',opposite:'Michigan State',side:'yes',note:'Taking the home team. Who’s with me?',created:now-1800000,tails:3,fades:1,myStance:null},
   {id:'post-jamie',trade_id:'sample-jamie-buy',tradeContracts:12,tradeCost:552,tradePrice:460000,tradeCreated:now-3600000,group_id:'oakland',author:'preview-jamie',authorName:'Jamie',symbol:'SAMPLE-OSU',event:markets[0].event,title:'Ohio State',opposite:'Penn State',side:'no',note:'I like Penn State in this one.',created:now-3600000,tails:2,fades:2,myStance:null},
@@ -49,14 +49,14 @@ export const previewApi: Api = async <T,>(path: string, raw?: unknown): Promise<
     result={market,candles,range,start,end,fetchedAt:end};
   }
   else if (route === 'groups') {
-    if (raw !== undefined) { const id = `sample-${Date.now()}`; groups.push({id,name:body.name,owner:'preview-brian',created:Date.now(),memberCount:1,proposalCount:0,invite}); result={id}; }
+    if (raw !== undefined) { const id = `sample-${Date.now()}`; if(!body.name?.trim()||body.name.trim().length>60)throw Error('Enter a group name (1–60 characters).');groups.push({id,name:body.name.trim(),owner:'preview-brian',created:Date.now(),memberCount:1,proposalCount:0,invite:Array.from({length:72},()=>Math.floor(Math.random()*16).toString(16)).join('')}); result={id}; }
     else result = {groups};
   } else if (parts[0] === 'groups' && parts[1]) {
     if(parts[2]==='messages'){if(!body.text?.trim())throw Error('Enter a message.');if(!messages.some(m=>m.id===body.requestId))messages.push({id:body.requestId,group_id:parts[1],author:'preview-brian',authorName:name,body:body.text.trim(),created:Date.now()});result={id:body.requestId};}
     else if(parts[2]==='reactions'){reactions=reactions.filter(r=>!(r.group_id===parts[1]&&r.target_id===body.targetId&&r.emoji===body.emoji));if(body.active)reactions.push({group_id:parts[1],target_id:body.targetId,emoji:body.emoji,count:1,mine:1});result={ok:true};}
     else if(parts[2]==='proposals') {const market=markets.find(m=>m.id===body.symbol);if(!market)throw Error('Market unavailable.');if(!proposals.some(p=>p.id===body.requestId))proposals.push({id:body.requestId,group_id:parts[1],author:'preview-brian',authorName:name,symbol:market.id,title:market.title,opposite:market.opposite,side:body.side,note:body.note,created:Date.now(),tails:0,fades:0,myStance:null});const group=groups.find(g=>g.id===parts[1]);if(group)group.proposalCount=proposals.filter(p=>p.group_id===group.id).length;result={id:body.requestId};}
     else if (parts[2] === 'responses') { const post=proposals.find(p=>p.id===body.proposalId); if(post){if(post.myStance)post[post.myStance==='tail'?'tails':'fades']--;post.myStance=body.stance==='none'?null:body.stance;if(post.myStance)post[post.myStance==='tail'?'tails':'fades']++;}result={ok:true}; }
-    else result = {group:groups.find(g=>g.id===parts[1])||groups[0],members:[{id:'preview-brian',name},{id:'preview-alex',name:'Alex'},{id:'preview-jamie',name:'Jamie'}],messages:messages.filter(m=>m.group_id===parts[1]&&!blocked.includes(m.author)),reactions:reactions.filter(r=>r.group_id===parts[1]),proposals:proposals.filter(p=>p.group_id===parts[1]&&!blocked.includes(p.author))};
+    else result = {group:groups.find(g=>g.id===parts[1])||groups[0],members:groups.find(g=>g.id===parts[1])?.memberCount===1?[{id:'preview-brian',name}]:[{id:'preview-brian',name},{id:'preview-alex',name:'Alex'},{id:'preview-jamie',name:'Jamie'}],messages:messages.filter(m=>m.group_id===parts[1]&&!blocked.includes(m.author)),reactions:reactions.filter(r=>r.group_id===parts[1]),proposals:proposals.filter(p=>p.group_id===parts[1]&&!blocked.includes(p.author))};
   } else if (route === 'demo-trades') {
     if (raw !== undefined) {
       let trade=trades.find(t=>t.id===body.requestId);
@@ -66,7 +66,7 @@ export const previewApi: Api = async <T,>(path: string, raw?: unknown): Promise<
   } else if(parts[0]==='demo-trades'&&parts[2]==='share') {
     const trade=trades.find(t=>t.id===parts[1]);
     for(const id of body.groupIds){const postId=`${trade.id}:${id}`;if(!proposals.some(p=>p.id===postId))proposals.unshift({...trade,trade_id:trade.id,tradeContracts:trade.contracts,tradeCost:trade.cost_cents,tradePrice:Math.round(trade.cost_cents/trade.contracts*10000),tradeCreated:trade.created,id:postId,group_id:id,author:'preview-brian',authorName:name,note:body.note,tails:0,fades:0,myStance:null});}result={ok:true};
-  } else if(parts[0]==='invites') result = raw === undefined ? {name:groups[0].name} : {id:groups[0].id};
+  } else if(parts[0]==='invites') {const group=groups.find(g=>g.invite===parts[1]);if(!group)throw Error('This invite is invalid or no longer available.');result=raw===undefined?{name:group.name}:{id:group.id};}
   else if(route==='blocks') {if(raw!==undefined)blocked=body.remove?blocked.filter(id=>id!==body.userId):[...new Set([...blocked,body.userId])];result={blocks:blocked.map(id=>({id,name:id==='preview-alex'?'Alex':'Jamie'}))};}
   else if(route==='reports')result={ok:true};
   else if(route==='account/delete') {const removed=new Set([...messages.filter(m=>m.author==='preview-brian').map(m=>m.id),...proposals.filter(p=>p.author==='preview-brian').map(p=>p.id)]);for(let i=messages.length-1;i>=0;i--)if(messages[i].author==='preview-brian')messages.splice(i,1);reactions=reactions.filter(r=>!r.mine&&!removed.has(r.target_id));proposals=proposals.filter(p=>p.author!=='preview-brian');trades.length=0;result={ok:true};}

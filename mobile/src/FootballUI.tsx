@@ -1,3 +1,4 @@
+import {GlassTabs} from './GlassTabs';
 import React, { useState } from 'react';
 import { Image, Pressable, Text, View, StyleSheet } from 'react-native';
 import Svg, { Path, Line, Circle, Text as SvgText } from 'react-native-svg';
@@ -20,10 +21,9 @@ export function IconButton({name,label,onPress}:{name:IconName;label:string;onPr
   return <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({pressed})=>({width:46,height:46,borderRadius:23,backgroundColor:colors.card,alignItems:'center',justifyContent:'center',opacity:pressed?.6:1})}><Icon name={name} size={22}/></Pressable>;
 }
 export function TabBar({active,onChange}:{active:'Home'|'Groups'|'Profile';onChange:(tab:'Home'|'Groups'|'Profile')=>void}){
-  return <View style={s.tabs}>{(['Home','Groups','Profile'] as const).map(tab=><Pressable key={tab} accessibilityRole="tab" accessibilityLabel={tab} accessibilityState={{selected:active===tab}} onPress={()=>onChange(tab)} style={s.tab}>
-    <View style={[s.tabIcon,active===tab&&{backgroundColor:colors.accentSoft}]}><Icon name={tab==='Home'?'home':tab==='Groups'?'groups':'profile'} color={active===tab?colors.accent:colors.muted}/></View><Text style={{fontSize:11,fontWeight:'600',color:active===tab?colors.accent:colors.muted}}>{tab}</Text>
-  </Pressable>)}</View>;
+  return <View style={{paddingHorizontal:16,paddingTop:6,paddingBottom:8}}><GlassTabs items={['Home','Groups','Profile'] as const} active={active} onChange={onChange} icon={(tab,color)=><Icon name={tab==='Home'?'home':tab==='Groups'?'groups':'profile'} color={color}/>}/></View>;
 }
+
 const teams = [
   {names:['michigan state','michigan st','michigan state spartans'],logo:require('../assets/teams/michigan-state.png')},
   {names:['michigan','michigan wolverines'],logo:require('../assets/teams/michigan.png')},
@@ -72,7 +72,7 @@ export function ProbabilityChart({data,market,range,onRange,disabled,buys=[]}:{d
   </View>;
 }
 const s=StyleSheet.create({
-  tabs:{flexDirection:'row',borderTopWidth:1,borderColor:colors.border,paddingTop:7,paddingBottom:7,backgroundColor:colors.bg},tab:{flex:1,alignItems:'center',gap:4,minHeight:56},tabIcon:{width:52,height:32,alignItems:'center',justifyContent:'center',borderRadius:16},
+  tabs:{flexDirection:'row',padding:6,borderRadius:34},tab:{flex:1,alignItems:'center',justifyContent:'center',gap:3,minHeight:58},tabIcon:{width:52,height:32,alignItems:'center',justifyContent:'center',borderRadius:16},
   gameCard:{backgroundColor:colors.card,borderRadius:22,overflow:'hidden',borderWidth:1,borderColor:colors.border},gameHeader:{flexDirection:'row',justifyContent:'space-between',paddingHorizontal:18,paddingTop:17},small:{fontSize:11,lineHeight:16,color:colors.muted},
   matchup:{flexDirection:'row',alignItems:'center',justifyContent:'center',padding:20,gap:16},team:{flex:1,alignItems:'center',gap:10},teamName:{color:colors.text,fontSize:15,fontWeight:'600',textAlign:'center'},at:{color:colors.muted,fontSize:13},
   marketRow:{paddingHorizontal:16,paddingVertical:12,minHeight:68,flexDirection:'row',alignItems:'center',gap:9,borderTopWidth:1,borderColor:colors.border},marketType:{color:colors.muted,fontSize:11,width:52},outcome:{flex:1,gap:5},outcomeName:{fontSize:11,color:colors.muted,lineHeight:14},probability:{color:colors.accent,fontSize:20,fontWeight:'600',fontVariant:['tabular-nums']},cardFoot:{fontSize:10,color:colors.muted,paddingHorizontal:16,paddingBottom:13,paddingTop:3},bigPercent:{fontSize:48,fontWeight:'600',color:colors.accent,letterSpacing:-2},
