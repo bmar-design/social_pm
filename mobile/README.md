@@ -122,3 +122,25 @@ has been verified in this environment. See [release checklist](RELEASE.md).
 - [Privy access tokens](https://docs.privy.io/authentication/user-authentication/access-tokens)
 - [Privy user deletion behavior](https://docs.privy.io/user-management/users/managing-users/deleting-users)
 - [Expo development builds](https://docs.expo.dev/develop/development-builds/introduction/)
+
+## Group chat
+
+Chat supports text messages and 👍 ❤️ 😂 🔥 👀 👎 reactions on messages and proposals.
+Messages and proposals appear together chronologically; tapping a proposal opens
+its Positions detail. Proposal sharing stays in the post-trade prompt. Open chats
+refresh every four seconds. The API returns the latest 100 messages and proposals.
+
+Apply `hosted/drizzle/0004_group_chat.sql` before running connected chat against
+a backend. The UI preview uses in-memory sample messages and reactions; reload
+resets them.
+
+## Profile performance
+
+Profile includes P&L, Positions, and History tabs. Unrealized P&L uses available
+market marks and actual purchase cost; unpriced holdings retain their cost and
+are excluded from priced totals. All records are practice buys. Realized P&L and
+win rate remain unavailable until sells and settlement records are supported.
+The capital chart displays purchase cost, not historical P&L. History loads all
+backend pages (200 trades per page), supports filtering and receipts, and exports
+CSV through a web download or native sharing. Deploy the updated history API
+with the mobile changes to load more than the previous 100-trade limit.

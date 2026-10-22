@@ -1,0 +1,76 @@
+// Run against an isolated built Worker on :5192 with migrations applied to
+// .wrangler/mobile-test. The seed uses only this test's synthetic accounts.
+import assert from 'node:assert/strict';
+import { writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+const origin = 'http://127.0.0.1:5192';
+const sessions = new Map();
+async function request(path, who, body, expected = 200, extra = {}) {
+  const headers = { ...extra };
+  if (sessions.has(who)) headers.Cookie = sessions.get(who);
+  if (body !== undefined) { headers.Origin = origin; headers['Content-Type'] = 'application/json'; }
+  Object.assign(headers, extra);
+  const response = await fetch(`${origin}/api/${path}`, { method: body === undefined ? 'GET' : 'POST', headers, body: body === undefined ? undefined : JSON.stringify(body) });
+  const result = await response.json();
+  assert.equal(response.status, expected, `${path}: ${JSON.stringify(result)}`);
+  if (response.headers.has('set-cookie')) sessions.set(who, response.headers.get('set-cookie').split(';')[0]);
+  return result;
+}
+const alice = await request('demo-session', 'alice', { method: 'email', email: 'alice@example.test', name: 'Alice' });
+const bob = await request('demo-session', 'bob', { method: 'email', email: 'bob@example.test', name: 'Bob' });
+await request('demo-session', 'outsider', { method: 'email', email: 'outside@example.test', name: 'Outsider' });
+const { id } = await request('groups', 'alice', { name: 'Mobile integration' }, 201);
+let detail = await request(`groups/${id}`, 'alice');
+await request(`invites/${detail.group.invite}`, 'bob', {});
+const post = crypto.randomUUID();
+// Values are generated UUIDs/DIDs, still quote all SQL literals explicitly.
+const sql = value => "'" + value.replaceAll("'", "''") + "'";
+writeFileSync('.wrangler/mobile-test-seed.sql', `INSERT INTO proposals(id,group_id,author,symbol,event,title,opposite,side,note,created) VALUES (${[post, id, alice.user.id, 'TEST', 'Test game', 'Yes', 'No', 'yes', 'Synthetic post'].map(sql).join(',')},${Date.now()});`);
+execFileSync(process.execPath, ['--import', './scripts/sites-env.mjs', './node_modules/wrangler/bin/wrangler.js', 'd1', 'execute', 'DB', '--local', '--persist-to', '.wrangler/mobile-test', '--config', 'dist/server/wrangler.json', '--file', '.wrangler/mobile-test-seed.sql'], { stdio: 'pipe' });
+detail = await request(`groups/${id}`, 'bob');
+assert.equal(detail.proposals.length, 1);
+const messageId=crypto.randomUUID();
+await request(`groups/${id}/messages`,'outsider',{requestId:messageId,text:'No access'},404);
+await request(`groups/${id}/messages`,'alice',{requestId:messageId,text:'Hello squad!'},201);
+await request(`groups/${id}/messages`,'alice',{requestId:messageId,text:'Hello squad!'});
+assert.equal((await request(`groups/${id}`,'bob')).messages.filter(m=>m.id===messageId).length,1);
+await request(`groups/${id}/messages`,'bob',{requestId:crypto.randomUUID(),text:'   '},400);
+await request(`groups/${id}/reactions`,'outsider',{targetId:messageId,emoji:'🔥',active:true},404);
+await request(`groups/${id}/reactions`,'bob',{targetId:messageId,emoji:'🔥',active:true});
+await request(`groups/${id}/reactions`,'bob',{targetId:messageId,emoji:'🔥',active:true});
+let reaction=(await request(`groups/${id}`,'bob')).reactions.find(r=>r.target_id===messageId);
+assert.equal(reaction.count,1);assert.equal(reaction.mine,1);
+assert.equal((await request(`groups/${id}`,'alice')).reactions.find(r=>r.target_id===messageId).mine,0);
+await request(`groups/${id}/reactions`,'bob',{targetId:messageId,emoji:'🔥',active:false});
+assert.equal((await request(`groups/${id}`,'bob')).reactions.length,0);
+await request(`groups/${id}/reactions`,'bob',{targetId:post,emoji:'❤️',active:true});
+await request(`groups/${id}/reactions`,'bob',{targetId:crypto.randomUUID(),emoji:'🔥',active:true},404);
+await request(`groups/${id}/reactions`,'bob',{targetId:post,emoji:'invalid',active:true},400);
+await request('reports', 'outsider', { proposalId: post, reason: 'Unauthorized' }, 404);
+await request('reports', 'bob', { proposalId: post, reason: 'Integration test' });
+await request('blocks', 'outsider', { userId: alice.user.id }, 404);
+await request('blocks', 'bob', { userId: alice.user.id });
+assert.equal((await request(`groups/${id}`, 'bob')).proposals.length, 0);
+assert.equal((await request(`groups/${id}`, 'bob')).messages.length,0);
+await request(`groups/${id}/reactions`,'bob',{targetId:messageId,emoji:'🔥',active:true},404);
+assert.equal((await request('market-responses?symbol=TEST', 'bob')).ideas.length, 0);
+assert.equal((await request(`groups/${id}`, 'alice')).proposals.length, 1);
+assert.equal((await request('blocks', 'bob')).blocks[0].id, alice.user.id);
+await request('blocks', 'bob', { userId: alice.user.id, remove: true });
+assert.equal((await request(`groups/${id}`, 'bob')).proposals.length, 1);
+await request('account/delete', 'bob', { confirm: 'DELETE' }, 400);
+await request('me', 'bob', undefined, 503, { Authorization: 'Bearer forged' });
+await request('groups', 'bob', { name: 'Cross origin' }, 403, { Origin: 'https://evil.example' });
+console.log('Mobile API membership, reporting, blocking and bearer rejection passed.');
+const historyTime=Date.now();
+const historyRows=Array.from({length:205},(_,i)=>`(${[crypto.randomUUID(),alice.user.id,'HISTORY','Synthetic game','Yes','No','yes'].map(sql).join(',')},100,500000,2,100,${historyTime})`);
+writeFileSync('.wrangler/mobile-test-history.sql',`INSERT INTO demo_trades(id,user_id,symbol,event,title,opposite,side,amount_cents,price_micros,contracts,cost_cents,created) VALUES ${historyRows.join(',')};`);
+execFileSync(process.execPath,['--import','./scripts/sites-env.mjs','./node_modules/wrangler/bin/wrangler.js','d1','execute','DB','--local','--persist-to','.wrangler/mobile-test','--config','dist/server/wrangler.json','--file','.wrangler/mobile-test-history.sql'],{stdio:'pipe'});
+const firstPage=await request('demo-trades','alice');
+assert.equal(firstPage.trades.length,200);assert(firstPage.nextCursor);
+const secondPage=await request(`demo-trades?cursor=${encodeURIComponent(firstPage.nextCursor)}`,'alice');
+assert.equal(secondPage.trades.length,5);assert.equal(secondPage.nextCursor,null);
+assert.equal(new Set([...firstPage.trades,...secondPage.trades].map(t=>t.id)).size,205);
+assert.equal((await request('demo-trades','bob')).trades.length,0);
+await request('demo-trades?cursor=bad','alice',undefined,400);
+console.log('Full history pagination, equal-time boundaries and user isolation passed.');

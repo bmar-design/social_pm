@@ -1,7 +1,7 @@
 module.exports = {
   expo: {
     name: 'Social Plays', slug: 'social-plays', version: '0.1.0',
-    orientation: 'portrait', userInterfaceStyle: 'dark',
+    orientation: 'portrait', userInterfaceStyle: 'light',
     scheme: process.env.EXPO_PUBLIC_APP_SCHEME || 'socialplays',
     ios: {
       supportsTablet: false,

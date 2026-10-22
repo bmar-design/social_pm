@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1792098038713,
+      "tag": "0000_greedy_angel",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1792099472527,
+      "tag": "0001_careful_baron_zemo",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1792105869128,
+      "tag": "0002_narrow_invaders",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1792531009375,
+      "tag": "0003_tough_adam_destine",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1792620000000,
+      "tag": "0004_group_chat",
+      "breakpoints": true
+    }
+  ]
+}

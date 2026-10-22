@@ -1,6 +1,11 @@
 import React from 'react';
 import { Pressable, Text, View, StyleSheet, TextInput, type TextInputProps } from 'react-native';
-export const colors = { bg: '#0e1210', card: '#191f1b', text: '#f4f5ef', muted: '#8f9b92', accent: '#d8f279', border: '#29332c' };
+// Shared Pascal palette from hosted/app/globals.css.
+export const colors = {
+  bg: '#fcf3e5', card: '#fff8ef', text: '#442f22', muted: '#90765d',
+  accent: '#ac4c32', border: '#edd2af', primary: '#e66e4c', onPrimary: '#442f22',
+  plum: '#582d7c', accentSoft: '#f8e8dd', plumSoft: '#eee0f2', avatar: '#efd9bc',
+};
 export const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.bg }, content: { padding: 20, gap: 16, paddingBottom: 36 },
   title: { fontSize: 32, fontWeight: '600', color: colors.text, letterSpacing: -1 },
@@ -13,8 +18,8 @@ export const styles = StyleSheet.create({
 export function Button({ title, onPress, secondary = false, disabled = false }: { title: string; onPress: () => void; secondary?: boolean; disabled?: boolean }) {
   return <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={onPress}
     style={({ pressed }) => ({ minHeight: 48, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 18, paddingVertical: 12, borderRadius: 14,
-      backgroundColor: secondary ? colors.card : colors.accent, borderColor: colors.border, borderWidth: secondary ? 1 : 0, opacity: disabled ? 0.4 : pressed ? 0.7 : 1 })}>
-    <Text style={{ color: secondary ? colors.text : colors.bg, fontSize: 16, fontWeight: '600' }}>{title}</Text>
+      backgroundColor: secondary ? colors.card : colors.primary, borderColor: colors.border, borderWidth: secondary ? 1 : 0, opacity: disabled ? 0.4 : pressed ? 0.7 : 1 })}>
+    <Text style={{ color: secondary ? colors.text : colors.onPrimary, fontSize: 16, fontWeight: '600' }}>{title}</Text>
   </Pressable>;
 }
 export function Field({ label, ...props }: TextInputProps & { label: string }) {

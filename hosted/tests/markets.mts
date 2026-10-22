@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {isCollegeFootball,normalizeMarket,normalizeCandles,rangeChange,normalizeTrades,normalizeLevels,priceValue} from '../lib/market-model.ts';
+const raw={symbol:'CFB_TEST.MARKET',display_attributes:{tags:['Sports','Football','NCAA Football'],event_description:'Michigan vs Ohio State, Spreads',market_description:'Michigan -3.5',game_page:{game_description:'Michigan vs Ohio State'},market_type:{teams:{home_name:'Michigan',away_name:'Ohio State'},market:{type:'spread',team:'home',line:'-3.5'}}},best_bid:'0.54',best_ask:'0.58',mark_price:'0.56',stats:{last_24h:{taker_buy_volume:'4',taker_sell_volume:'6',taker_buy_trade_count:'2',taker_sell_trade_count:'1',mark_price_start:'0.50'}}};
+assert(isCollegeFootball(raw));assert(!isCollegeFootball({...raw,display_attributes:{tags:['Sports','Football','NFL']}}));
+const m=normalizeMarket(raw);assert.equal(m.opposite,'Ohio State +3.5');assert.equal(m.yesAsk,.58);assert(Math.abs(m.noAsk!-.46)<1e-10);assert.equal(m.volume24h,10);assert.equal(m.trades24h,3);assert(Math.abs(m.change24h!-.06)<1e-10);
+const missing=normalizeMarket({symbol:'CFB_EMPTY',display_attributes:{}});assert.equal(missing.noAsk,null);assert.equal(missing.volume24h,null);assert.equal(missing.change24h,null);
+for(const bad of [null,undefined,'',NaN,Infinity,-.01,1.01])assert.equal(priceValue(bad),null);assert.equal(priceValue('0'),0);
+const candles=normalizeCandles([{time:'3000',close:'.4'},{time:'2000',close:'.3'},{time:'2000',close:'.35'},{time:'500',close:'.2'},{time:'4000',close:'.9'},{time:'2500',close:'NaN'}],1000,4000);
+assert.deepEqual(candles,[{time:2000,close:.35},{time:3000,close:.4}]);assert.equal(rangeChange([]),null);assert.equal(rangeChange(candles.slice(0,1)),null);assert(Math.abs(rangeChange(candles)!-.05)<1e-10);
+assert.deepEqual(normalizeCandles([],0,100),[]);
+assert.deepEqual(normalizeTrades([{trade_id:'1',price:'.5',size:'3',trade_ts_ms:'1234',taker_side:'ASK',maker:'hidden'}]),[{id:'1',price:.5,size:3,time:1234,side:'sell'}]);
+assert.deepEqual(normalizeLevels([['.5','3'],['NaN','4'],['.6','-2']]),[{price:.5,size:3}]);
+console.log('PASS: college-football scope, outcome semantics, independent quotes, missing stats vs zero, sorted/deduplicated sparse history, invalid samples rejected, no invented history, private fields excluded from trades.');

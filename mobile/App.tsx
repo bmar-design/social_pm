@@ -11,7 +11,7 @@ export default function App() {
   const preview = process.env.EXPO_PUBLIC_UI_PREVIEW === 'true';
   const appId = preview ? 'ui-preview' : process.env.EXPO_PUBLIC_PRIVY_APP_ID;
   const clientId = preview ? 'ui-preview' : process.env.EXPO_PUBLIC_PRIVY_CLIENT_ID;
-  return <SafeAreaProvider><StatusBar style="light" />{appId && clientId ?
+  return <SafeAreaProvider><StatusBar style="dark" />{appId && clientId ?
     <PrivyProvider appId={appId} clientId={clientId}><MobileApp /><PrivyElements /></PrivyProvider> :
     <SafeAreaView style={styles.page}><View style={styles.content}><Text style={styles.title}>Social Plays</Text>
       <Text style={styles.text}>The iPhone app is ready to configure.</Text><Text style={styles.muted}>Add your Privy app ID, mobile client ID and app API URL to the mobile environment, then restart the development build.</Text>

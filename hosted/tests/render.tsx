@@ -1,0 +1,12 @@
+import React from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+import assert from 'node:assert/strict';
+import GameBrowser from '../app/game-browser';
+import TradeTicket from '../app/trade-ticket';
+import {normalizeMarket} from '../lib/market-model';
+const market=normalizeMarket({symbol:'GAME.HOME',display_attributes:{game_page:{game_id:'game',game_description:'Colorado State vs Texas State'},market_description:'Texas State',market_type:{teams:{home_name:'Texas State',away_name:'Colorado State'},market:{type:'moneyline',outcome:'home'}}},mark_price:'.85',best_ask:'.86',best_bid:'.84'});
+const html=renderToStaticMarkup(<GameBrowser markets={[market,{...market,id:'GAME.SP',kind:'spread'}]} loading={false} error="" fetchedAt={1} onRefresh={()=>{}} onOpen={()=>{}}/>);
+assert.equal((html.match(/aria-label="Open /g)||[]).length,1);assert(html.includes('Colorado State'));assert(html.includes('Texas State'));assert(html.includes('2 markets'));
+const ticket=renderToStaticMarkup(<TradeTicket market={market} quotedAt={Date.now()} signedIn={true} busy={false} onTrade={async()=>{}}/>);
+assert(ticket.includes('Review demo buy'));assert(ticket.includes('No money moves'));assert(!ticket.includes('Share with groups'));
+console.log('PASS: rendered one card per game, both teams visible, market count, demo trade ticket leads with review, no pre-trade group sharing.');
