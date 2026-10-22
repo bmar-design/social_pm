@@ -1,7 +1,7 @@
 // Pascal explicitly allows cross-origin public reads. If the hosted relay cannot
 // reach it, the browser can read the same public endpoints without credentials.
-import {isCollegeFootball,normalizeMarket,normalizeCandles,normalizeTrades,normalizeLevels,RANGES} from './market-model';
-import type {Market,Range} from './market-model';
+import {isCollegeFootball,normalizeMarket,normalizeCandles,normalizeTrades,normalizeLevels,RANGES} from './market-model.ts';
+import type {Market,Range} from './market-model.ts';
 let catalog:{markets:Market[];fetchedAt:number}|null=null;
 async function provider(path:string,params:URLSearchParams|undefined,signal?:AbortSignal,body?:unknown){
  const response=await fetch('https://data.pascal.trade/api/v1/'+path+(params?'?'+params:''),{method:body?'POST':'GET',credentials:'omit',headers:{Accept:'application/json',...(body?{'Content-Type':'application/json'}:{})},signal:signal?AbortSignal.any([signal,AbortSignal.timeout(12000)]):AbortSignal.timeout(12000),...(body?{body:JSON.stringify(body)}:{})});

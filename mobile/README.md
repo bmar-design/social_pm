@@ -152,3 +152,51 @@ The floating navigation, Chat/Positions switch, and chat composer use native
 platforms and Reduce Transparency. Safari preview uses CSS backdrop blur with
 an opaque fallback. Rebuild the native development client after installing the
 new module (`npm run ios`); restarting Metro alone does not add native modules.
+
+## Price feed
+
+Connected mode polls the hosted `GET /api/markets` every 15 seconds while the app
+is active and refreshes on returning to the foreground. Home and portfolio marks
+use those snapshots. The screen shows the last successful timestamp; failed
+refreshes keep the previous snapshot with an out-of-date warning. UI preview
+continues to use sample data. Market detail fetches a fresh snapshot when opened;
+an open trade review is not automatically repriced.
+
+The backend caches successful Pascal catalog reads for 15 seconds per Worker
+instance and coalesces simultaneous catalog requests. Failed requests are not
+cached and can be retried. This is a polling feed, not WebSocket streaming; the
+cache plus polling interval can delay updates by roughly 30 seconds plus network
+time. No provider secret or database migration is required for public prices.
+Deploy the updated hosted backend and configure `EXPO_PUBLIC_API_URL` for device
+use. This does not enable real-money execution.
+
+Feed regression check from `hosted/`:
+`node --experimental-strip-types --test tests/price-feed.mts tests/markets.mts`.
+
+### Collaborative lays
+
+In a group’s Chat tab, choose **+ Build a lay**, select 2–6 distinct markets,
+then share the lay or review and confirm a practice stake. Shared lays render
+as cards; **Review & remix** opens an independent copy. Swipe a leg left to
+remove it (or use Remove), undo the last removal, flip to the opposite outcome,
+and add more markets. Alex has a sample lay in the UI preview.
+
+Lays use a validated `LAY/1` message payload over the existing authenticated
+group chat API, so membership, persistence, polling and reactions use the same
+path as messages. Remixes retain the source message ID. Confirmation posts a
+practice receipt in chat; it never calls the trading API, debits a balance, or
+quotes combined odds. This is version-based collaboration, not simultaneous
+editing. Older clients display the message payload as text. Live parlay pricing,
+correlation rules and execution remain dependent on future provider support.
+
+Validation: `npm run typecheck` and `npm test` (including malformed lay payloads
+and independent remix round trips). Device gesture/layout review is still needed.
+
+## Pascal account integration
+
+Native account setup, locally verified wallet signatures, SecureStore trading keys,
+account reads and standard IOC signing are implemented behind
+`EXPO_PUBLIC_PASCAL_ENABLED`. Builder order submission remains blocked by missing
+builder permit encoding in Pascal's published signing reference. See
+[PASCAL.md](PASCAL.md) for configuration, verification and the remaining work.
+Practice controls still submit practice buys only.

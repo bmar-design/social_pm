@@ -79,6 +79,7 @@ let view=await request('groups/'+id,bob);
 assert((await request('market-responses?symbol='+encodeURIComponent(market.id),bob)).ideas.length>=1);
 assert.equal((await request('market-responses?symbol='+encodeURIComponent(market.id),outsider)).ideas.length,0);
 assert.equal(view.proposals.length,2);const idea=view.proposals.find(p=>p.id===requestId);assert.equal(idea.note,proposal.note);assert.equal(idea.authorName,'Alice');
+for(const stance of ['tail','fade'])await request('groups/'+id+'/responses',alice,{proposalId:requestId,stance},403);
 await request('groups/'+id+'/responses',bob,{proposalId:requestId,stance:'tail'});
 await request('groups/'+id+'/responses',bob,{proposalId:requestId,stance:'tail'});
 view=await request('groups/'+id,alice);assert.equal(view.proposals.find(p=>p.id===requestId).tails,1);

@@ -1,3 +1,4 @@
+import {writeLay} from '../lays';
 import type { Api } from '../api';
 import type { Market } from '../../../hosted/lib/market-model';
 import { simulateBuy } from '../../../hosted/lib/game-model';
@@ -31,6 +32,7 @@ trades.push(...[
 ].map(t=>({...t,user_id:'preview-brian'})));
 let blocked: string[] = [];
 const messages:any[]=[{id:'hello-alex',group_id:'oakland',author:'preview-alex',authorName:'Alex',body:'Who’s watching the game Saturday? 🏈',created:now-4000000},{id:'hello-brian',group_id:'oakland',author:'preview-brian',authorName:'Brian',body:'I’m in! What’s everyone picking?',created:now-3900000}];
+messages.push({id:'lay-alex',group_id:'oakland',author:'preview-alex',authorName:'Alex',created:now-900000,body:writeLay({v:1,name:'Saturday with the boys',legs:markets.filter(m=>m.kind==='moneyline').map(m=>({symbol:m.id,title:m.title,opposite:m.opposite,side:'yes' as const}))})});
 let reactions:any[]=[];
 export const previewApi: Api = async <T,>(path: string, raw?: unknown): Promise<T> => {
   const body = (raw || {}) as any;
@@ -55,7 +57,7 @@ export const previewApi: Api = async <T,>(path: string, raw?: unknown): Promise<
     if(parts[2]==='messages'){if(!body.text?.trim())throw Error('Enter a message.');if(!messages.some(m=>m.id===body.requestId))messages.push({id:body.requestId,group_id:parts[1],author:'preview-brian',authorName:name,body:body.text.trim(),created:Date.now()});result={id:body.requestId};}
     else if(parts[2]==='reactions'){reactions=reactions.filter(r=>!(r.group_id===parts[1]&&r.target_id===body.targetId&&r.emoji===body.emoji));if(body.active)reactions.push({group_id:parts[1],target_id:body.targetId,emoji:body.emoji,count:1,mine:1});result={ok:true};}
     else if(parts[2]==='proposals') {const market=markets.find(m=>m.id===body.symbol);if(!market)throw Error('Market unavailable.');if(!proposals.some(p=>p.id===body.requestId))proposals.push({id:body.requestId,group_id:parts[1],author:'preview-brian',authorName:name,symbol:market.id,title:market.title,opposite:market.opposite,side:body.side,note:body.note,created:Date.now(),tails:0,fades:0,myStance:null});const group=groups.find(g=>g.id===parts[1]);if(group)group.proposalCount=proposals.filter(p=>p.group_id===group.id).length;result={id:body.requestId};}
-    else if (parts[2] === 'responses') { const post=proposals.find(p=>p.id===body.proposalId); if(post){if(post.myStance)post[post.myStance==='tail'?'tails':'fades']--;post.myStance=body.stance==='none'?null:body.stance;if(post.myStance)post[post.myStance==='tail'?'tails':'fades']++;}result={ok:true}; }
+    else if (parts[2] === 'responses') { const post=proposals.find(p=>p.id===body.proposalId); if(post){if(post.author==='preview-brian'&&body.stance!=='none')throw Error('You cannot tail or fade your own proposal.');if(post.myStance)post[post.myStance==='tail'?'tails':'fades']--;post.myStance=body.stance==='none'?null:body.stance;if(post.myStance)post[post.myStance==='tail'?'tails':'fades']++;}result={ok:true}; }
     else result = {group:groups.find(g=>g.id===parts[1])||groups[0],members:groups.find(g=>g.id===parts[1])?.memberCount===1?[{id:'preview-brian',name}]:[{id:'preview-brian',name},{id:'preview-alex',name:'Alex'},{id:'preview-jamie',name:'Jamie'}],messages:messages.filter(m=>m.group_id===parts[1]&&!blocked.includes(m.author)),reactions:reactions.filter(r=>r.group_id===parts[1]),proposals:proposals.filter(p=>p.group_id===parts[1]&&!blocked.includes(p.author))};
   } else if (route === 'demo-trades') {
     if (raw !== undefined) {

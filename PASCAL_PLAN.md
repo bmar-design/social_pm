@@ -2,7 +2,9 @@
 
 Decision: use Pascal for execution. Keep the primary experience in dollars,
 with email sign-in, Add money, Tail/Fade, confirmation, and Withdraw.
-This is an implementation plan; the current application remains simulated.
+Trading remains simulated. Native Pascal account setup and standard order-signing
+utilities are now implemented behind a configuration flag; builder order submission
+is blocked by missing published permit encoding. See [implementation status](mobile/PASCAL.md).
 
 ## User experience
 

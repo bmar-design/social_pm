@@ -1,0 +1,56 @@
+<div id="lay-review-sketches" class="viz-carousel" aria-label="Lay review layout sketches">
+  <section data-variant="Compact list" aria-label="Compact list review"><div class="stage"><div class="phone compact"></div></div></section>
+  <section data-variant="Match ticket" aria-label="Match ticket review" hidden><div class="stage"><div class="phone ticket"></div></div></section>
+  <section data-variant="Expandable legs" aria-label="Expandable leg review" hidden><div class="stage"><div class="phone expanded"></div></div></section>
+</div>
+<style>
+#lay-review-sketches .stage{min-height:780px;padding:24px 8px;display:flex;justify-content:center;color:var(--foreground)}
+#lay-review-sketches .phone{box-sizing:border-box;width:370px;max-width:100%;padding:22px 20px;background:var(--card);color:var(--card-foreground);border:1px solid var(--border);border-radius:28px;align-self:flex-start}
+#lay-review-sketches .phone *{box-sizing:border-box}
+#lay-review-sketches header,#lay-review-sketches .row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+#lay-review-sketches header{margin-bottom:28px}
+#lay-review-sketches .muted{color:var(--muted-foreground)}
+#lay-review-sketches .eyebrow{letter-spacing:.08em;text-transform:uppercase}
+#lay-review-sketches h2{margin:8px 0}
+#lay-review-sketches .intro{margin-bottom:25px}
+#lay-review-sketches .leg{padding:18px 0;border-bottom:1px solid var(--border)}
+#lay-review-sketches .identity{display:flex;gap:12px;align-items:center;min-width:0}
+#lay-review-sketches .team{display:grid;place-items:center;flex-shrink:0;width:40px;height:40px;border-radius:50%;background:var(--muted);font-weight:500}
+#lay-review-sketches .pick{font-weight:500}
+#lay-review-sketches .sub{margin-top:5px}
+#lay-review-sketches .price{text-align:right;flex-shrink:0}
+#lay-review-sketches .actions{margin-top:22px;display:grid;gap:12px}
+#lay-review-sketches .footnote{text-align:center;margin:18px 0 0}
+#lay-review-sketches .ticket .slip{border-top:1px dashed var(--border);border-bottom:1px dashed var(--border);padding:20px 0;margin:22px 0}
+#lay-review-sketches .ticket .leg{border:0;padding:14px 0}
+#lay-review-sketches .ticket .selection{margin:10px 0 0 52px;padding-left:12px;border-left:2px solid var(--border)}
+#lay-review-sketches details{border-bottom:1px solid var(--border);padding:18px 0}
+#lay-review-sketches summary{list-style:none;display:flex;gap:12px;align-items:center;min-height:44px}
+#lay-review-sketches summary::-webkit-details-marker{display:none}
+#lay-review-sketches .grow{flex:1}
+#lay-review-sketches .detail{padding:16px 0 0 52px;display:grid;gap:12px}
+#lay-review-sketches .notice{padding-top:16px}
+@media(max-width:380px){#lay-review-sketches .stage{min-height:840px}#lay-review-sketches .phone{padding:20px 14px}}
+</style>
+<script>
+(()=>{
+const root=document.getElementById('lay-review-sketches');
+const picks=[{team:'Michigan',abbr:'M',opponent:'Michigan State',time:'Sat · 7:30 PM',price:'62.0¢',odds:'1.61×'},{team:'Oregon',abbr:'O',opponent:'Washington',time:'Sat · 3:30 PM',price:'58.0¢',odds:'1.72×'},{team:'Texas',abbr:'T',opponent:'Oklahoma',time:'Sat · 12:00 PM',price:'65.0¢',odds:'1.54×'}];
+const intro='<header><button class="btn btn-ghost back" type="button" aria-label="Back to positions"><i data-lucide="arrow-left" aria-hidden="true"></i></button><span class="text-small muted">LAY REVIEW</span><span class="text-small muted count">3 legs</span></header><div class="intro"><div class="eyebrow text-small muted">Shared by Alex</div><h2>Saturday lay</h2><div class="muted">College football · Practice picks</div></div>';
+const identity=p=>'<div class="identity"><div class="team">'+p.abbr+'</div><div><div class="pick">'+p.team+' to win</div><div class="text-small muted sub">vs. '+p.opponent+'</div></div></div>';
+const price=p=>'<div class="price"><div>'+p.price+'</div><div class="text-small muted sub">'+p.odds+' odds</div></div>';
+const footer='<div class="actions"><button class="btn btn-primary btn-block add" type="button"><i data-lucide="plus" aria-hidden="true"></i> Add a leg · 3/6</button><button class="btn btn-block back" type="button">Back to positions</button></div><p class="text-small muted footnote">Illustrative prices · No order placed</p><div class="notice text-small muted" aria-live="polite"></div>';
+root.querySelectorAll('.phone').forEach(phone=>{
+let body='';
+if(phone.classList.contains('compact'))body='<div class="row text-small muted"><span>Selections</span><span>Current price</span></div>'+picks.map((p,i)=>'<div class="leg"><div class="row">'+identity(p)+price(p)+'</div><div class="row sub"><span class="text-small muted">'+p.time+'</span><button class="btn btn-ghost remove" type="button" data-index="'+i+'">Remove</button></div></div>').join('');
+if(phone.classList.contains('ticket'))body='<div class="slip"><div class="row text-small muted"><span>YOUR GAME DAY TICKET</span><span>3 picks</span></div>'+picks.map(p=>'<div class="leg">'+identity(p)+'<div class="selection row"><span class="text-small muted">'+p.time+'</span><span>'+p.price+'</span></div></div>').join('')+'</div><div class="row"><span class="muted">Review selections</span><button type="button" class="btn edit">Edit legs</button></div><div class="ticket-edit" hidden>'+picks.map((p,i)=>'<div class="row leg"><span>'+p.team+'</span><button class="btn btn-ghost remove" data-index="'+i+'" type="button">Remove</button></div>').join('')+'</div>';
+if(phone.classList.contains('expanded'))body='<div class="text-small muted">Tap a leg for market details</div>'+picks.map((p,i)=>'<details '+(i===0?'open':'')+'><summary class="cursor-interaction"><div class="team">'+p.abbr+'</div><div class="grow"><div class="pick">'+p.team+' to win</div><div class="text-small muted sub">'+p.price+' · '+p.odds+'</div></div><i data-lucide="chevron-down" aria-hidden="true"></i></summary><div class="detail"><div class="muted">'+p.team+' vs. '+p.opponent+'</div><div class="text-small muted">Moneyline · '+p.time+'</div><button class="btn btn-ghost remove" type="button" data-index="'+i+'">Remove leg</button></div></details>').join('');
+phone.innerHTML=intro+body+footer;
+const removed=new Set();
+phone.querySelectorAll('.remove').forEach(button=>button.addEventListener('click',()=>{const i=Number(button.dataset.index);removed.add(i);const item=button.closest('details')||button.closest('.leg');item.hidden=true;phone.querySelector('.count').textContent=(3-removed.size)+' legs';phone.querySelector('.add').textContent='＋ Add a leg · '+(3-removed.size)+'/6';phone.querySelector('.notice').textContent=picks[i].team+' removed from this sketch.';}));
+phone.querySelector('.edit')?.addEventListener('click',()=>{const edit=phone.querySelector('.ticket-edit');edit.hidden=!edit.hidden;phone.querySelector('.edit').textContent=edit.hidden?'Edit legs':'Done';});
+phone.querySelector('.add').addEventListener('click',()=>{phone.querySelector('.notice').textContent='Market search opens here to choose the next leg.';});
+phone.querySelectorAll('.back').forEach(b=>b.addEventListener('click',()=>{phone.querySelector('.notice').textContent='Return to the group’s Positions tab.';}));
+});
+})();
+</script>

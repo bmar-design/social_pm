@@ -1,0 +1,42 @@
+{
+  "source": "https://docs.pascal.trade/llms/request-signing.txt",
+  "retrieved": "2026-10-22",
+  "vectors": [
+    {
+      "permit": "PlaceOrderPermit",
+      "signer_role": "trading_key",
+      "private_key_hex": "0808080808080808080808080808080808080808080808080808080808080808",
+      "public_key": "2KW2XRd9kwqet15Aha2oK3tYvd3nWbTFH1MBiRAv1BE1",
+      "deployment_id": 3,
+      "message_hex": "01010300881300000094962793010000ea4a6c63e29c520abef5507b132ec5f9954776aebebe7b92421eea691446d22c1398f62c6d1a457c51ba6a4b5f3dbd2f69fca93216218dc8997e416bd17d93ca0a0000000000000070640800000000002a000000000000002b000000000000008082cd2793010000000000000000000000000000000000000000000000000000000000000000000053494d5f4556454e545f312e4d41524b45545f3100000000000000000000000000000000dcaf53738f1d5f06164660498a75888e7f0c78ed5f1bc17be1dd1cb3ccf53ce3000000010700000000000000",
+      "signature": "46gXGMwTxEckctHD3tjVyedhGG95VK2F97F3idkSYFR3WNEX4rG9g6g8KDTQPoxzLieudk8WHDXw7xNV3R2WwKCd"
+    },
+    {
+      "permit": "CreateTradingKeyPermit",
+      "signer_role": "owner_wallet",
+      "private_key_hex": "0707070707070707070707070707070707070707070707070707070707070707",
+      "public_key": "GmaDrppBC7P5ARKV8g3djiwP89vz1jLK23V2GBjuAEGB",
+      "deployment_id": 3,
+      "message_utf8": "[\"create_trading_key\",\"api-doc-key\",\"2KW2XRd9kwqet15Aha2oK3tYvd3nWbTFH1MBiRAv1BE1\",1732140800000,1,3,5000,1731536000000,\"GmaDrppBC7P5ARKV8g3djiwP89vz1jLK23V2GBjuAEGB\",\"GmaDrppBC7P5ARKV8g3djiwP89vz1jLK23V2GBjuAEGB\"]",
+      "signature": "kyc2KdqPTeEWqoK3pXR2rgPUiK4zXg9QdQffPUWk8eALpFy7uaHBEsASt7RQyVzDeubHVsPqQAHXrt8m8KZ78Ep"
+    },
+    {
+      "permit": "RevokeTradingKeyPermit",
+      "signer_role": "owner_wallet",
+      "private_key_hex": "0707070707070707070707070707070707070707070707070707070707070707",
+      "public_key": "GmaDrppBC7P5ARKV8g3djiwP89vz1jLK23V2GBjuAEGB",
+      "deployment_id": 3,
+      "message_utf8": "[\"revoke_trading_key\",\"2KW2XRd9kwqet15Aha2oK3tYvd3nWbTFH1MBiRAv1BE1\",1,3,5000,1731536000000,\"GmaDrppBC7P5ARKV8g3djiwP89vz1jLK23V2GBjuAEGB\",\"GmaDrppBC7P5ARKV8g3djiwP89vz1jLK23V2GBjuAEGB\"]",
+      "signature": "3muKct6upyRNAr1CPdYcxQGCojpuB4gaEnWvbNwEBJ6rrKaThRZrKY56rpYbFEsGUZqJ4iCTJqYrPuxfGYVzXQX3"
+    },
+    {
+      "permit": "RegisterDepositAddressReferralCodePermit",
+      "signer_role": "owner_wallet",
+      "private_key_hex": "0707070707070707070707070707070707070707070707070707070707070707",
+      "public_key": "GmaDrppBC7P5ARKV8g3djiwP89vz1jLK23V2GBjuAEGB",
+      "deployment_id": 3,
+      "message_utf8": "[\"register_deposit_address\",\"GmaDrppBC7P5ARKV8g3djiwP89vz1jLK23V2GBjuAEGB\",1,3,5000,1731536000000,\"GmaDrppBC7P5ARKV8g3djiwP89vz1jLK23V2GBjuAEGB\",\"GmaDrppBC7P5ARKV8g3djiwP89vz1jLK23V2GBjuAEGB\",\"referral_code\",\"k7wq2m4x\"]",
+      "signature": "2GVZuf1birCpfr6DKbu1ALSxRTpVnzFAa6oYqnEsnDUB2TFqeYTsKEZrCxNzATyCZbEaLW7koZJPRh9euhYiLtm4"
+    }
+  ]
+}

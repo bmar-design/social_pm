@@ -1,13 +1,20 @@
-import {isCollegeFootball,normalizeMarket,normalizeCandles,normalizeTrades,normalizeLevels,RANGES} from './market-model';
-import type {Market,Range} from './market-model';
-export type {Market,Range} from './market-model';
+import {isCollegeFootball,normalizeMarket,normalizeCandles,normalizeTrades,normalizeLevels,RANGES} from './market-model.ts';
+import type {Market,Range} from './market-model.ts';
+export type {Market,Range} from './market-model.ts';
 let cache:{markets:Market[];fetchedAt:number}|null=null;
 const detailCache=new Map<string,{data:unknown;time:number}>();
 async function read(path:string,params?:URLSearchParams){const r=await fetch('https://data.pascal.trade/api/v1/'+path+(params?'?'+params:''),{signal:AbortSignal.timeout(12000),headers:{Accept:'application/json','User-Agent':'SocialGroups/1.0'}});if(!r.ok){console.error('Pascal read failed',path,r.status);throw Error('Pascal’s market feed is temporarily unavailable. Please try again shortly.');}const p=await r.json() as {status:string;data:any};if(p.status!=='success')throw Error('Invalid market response.');return p.data}
+let catalogRequest:Promise<{markets:Market[];fetchedAt:number}>|null=null;
 export async function marketData(){
  if(cache&&Date.now()-cache.fetchedAt<15000)return cache;
+ if(catalogRequest)return catalogRequest;
+ catalogRequest=loadMarkets();
+ try{return await catalogRequest}finally{catalogRequest=null}
+}
+async function loadMarkets(){
+ if(cache&&Date.now()-cache.fetchedAt<15000)return cache;
  const data=await read('markets');if(!Array.isArray(data))throw Error('Invalid market response.');
- const markets:Market[]=data.filter(m=>!m.resolution&&typeof m.symbol==='string'&&isCollegeFootball(m)).map(normalizeMarket).sort((a,b)=>(b.volume24h||0)-(a.volume24h||0)||(a.startsAt||Infinity)-(b.startsAt||Infinity)||a.event.localeCompare(b.event));
+ const markets:Market[]=data.filter(m=>m&&!m.resolution&&typeof m.symbol==='string'&&isCollegeFootball(m)).map(normalizeMarket).sort((a,b)=>(b.volume24h||0)-(a.volume24h||0)||(a.startsAt||Infinity)-(b.startsAt||Infinity)||a.event.localeCompare(b.event));
  cache={markets,fetchedAt:Date.now()};return cache;
 }
 export async function marketDetails(symbol:string,range:Range){

@@ -1,5 +1,5 @@
-import type {Market} from './market-model';
-import {priceValue} from './market-model';
+import type {Market} from './market-model.ts';
+import {priceValue} from './market-model.ts';
 // Unverified browser quotes are permitted only for zero-money practice records.
 // This is deliberately not an authorization or real-order pricing mechanism.
 export function browserDemoQuote(value:any,symbol:string,now=Date.now()):Market|null{

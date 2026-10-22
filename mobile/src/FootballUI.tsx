@@ -1,6 +1,7 @@
-import {GlassTabs} from './GlassTabs';
-import React, { useState } from 'react';
-import { Image, Pressable, Text, View, StyleSheet } from 'react-native';
+import {GlassTabs, useReducedMotion} from './GlassTabs';
+import React, { useEffect, useRef, useState } from 'react';
+import type { Api } from './api';
+import { Animated, Easing, Image, Pressable, Text, View, StyleSheet } from 'react-native';
 import Svg, { Path, Line, Circle, Text as SvgText } from 'react-native-svg';
 import { colors, styles } from './ui';
 import type { Game } from '../../hosted/lib/game-model';
@@ -21,17 +22,27 @@ export function IconButton({name,label,onPress}:{name:IconName;label:string;onPr
   return <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({pressed})=>({width:46,height:46,borderRadius:23,backgroundColor:colors.card,alignItems:'center',justifyContent:'center',opacity:pressed?.6:1})}><Icon name={name} size={22}/></Pressable>;
 }
 export function TabBar({active,onChange}:{active:'Home'|'Groups'|'Profile';onChange:(tab:'Home'|'Groups'|'Profile')=>void}){
-  return <View style={{paddingHorizontal:16,paddingTop:6,paddingBottom:8}}><GlassTabs items={['Home','Groups','Profile'] as const} active={active} onChange={onChange} icon={(tab,color)=><Icon name={tab==='Home'?'home':tab==='Groups'?'groups':'profile'} color={color}/>}/></View>;
+  return <View style={{paddingHorizontal:16,paddingTop:6,paddingBottom:8}}><GlassTabs allowReselect items={['Home','Groups','Profile'] as const} active={active} onChange={onChange} icon={(tab,color)=><Icon name={tab==='Home'?'home':tab==='Groups'?'groups':'profile'} color={color}/>}/></View>;
 }
 
 const teams = [
-  {names:['michigan state','michigan st','michigan state spartans'],logo:require('../assets/teams/michigan-state.png')},
-  {names:['michigan','michigan wolverines'],logo:require('../assets/teams/michigan.png')},
-  {names:['ohio state','ohio st','ohio state buckeyes'],logo:require('../assets/teams/ohio-state.png')},
-  {names:['penn state','penn st','penn state nittany lions'],logo:require('../assets/teams/penn-state.png')},
-  {names:['texas','texas longhorns'],logo:require('../assets/teams/texas.png')},
-  {names:['georgia','georgia bulldogs'],logo:require('../assets/teams/georgia.png')},
+  {names:['michigan state','michigan st','michigan state spartans'],color:'#18453b',logo:require('../assets/teams/michigan-state.png')},
+  {names:['michigan','michigan wolverines'],color:'#00274c',logo:require('../assets/teams/michigan.png')},
+  {names:['ohio state','ohio st','ohio state buckeyes'],color:'#bb0000',logo:require('../assets/teams/ohio-state.png')},
+  {names:['penn state','penn st','penn state nittany lions'],color:'#041e42',logo:require('../assets/teams/penn-state.png')},
+  {names:['texas','texas longhorns'],color:'#bf5700',logo:require('../assets/teams/texas.png')},
+  {names:['georgia','georgia bulldogs'],color:'#ba0c2f',logo:require('../assets/teams/georgia.png')},
 ];
+export function teamColor(name:string){
+  const normalized=name.toLowerCase().trim().replace(/\s[+-]\d+(?:\.\d+)?$/,'');
+  return teams.find(t=>t.names.includes(normalized))?.color ?? '#90765d';
+}
+export function outcomeTone(market:Market,side:'yes'|'no'){
+  const label=side==='yes'?market.title:market.opposite;
+  const team=[market.home,market.away].filter((name):name is string=>!!name).sort((a,b)=>b.length-a.length).find(name=>label.toLowerCase().includes(name.toLowerCase()));
+  const primary=teamColor(team||label);
+  return {primary,bg:primary+'14',ink:primary,line:primary+'55'};
+}
 export function TeamLogo({name,size=40}:{name:string;size?:number}){
   const [failed,setFailed]=useState(false);
   const normalized=name.toLowerCase().trim().replace(/\s[+-]\d+(?:\.\d+)?$/,'');
@@ -42,12 +53,50 @@ export function TeamLogo({name,size=40}:{name:string;size?:number}){
 }
 export const percent=(value:number|null)=>value===null?'—':`${Math.round(value*100)}%`;
 export const marketLabel=(market:Market)=>market.kind==='moneyline'?'Winner':market.kind==='spread'?'Spread':market.kind==='total_points'?'Total points':'Season';
-export function GameCard({game,onOpen,disabled}:{game:Game;onOpen:(market:Market)=>void;disabled:boolean}){
+export function GameCard({game,onOpen,onBuy,disabled,api,updatedAt}:{game:Game;onOpen:(market:Market)=>void;onBuy:(market:Market,side:'yes'|'no')=>void;disabled:boolean;api:Api;updatedAt:number}){
+  const [expanded,setExpanded]=useState<string|null>(null);
   return <View style={s.gameCard}><View style={s.gameHeader}><Text style={styles.label}>NCAA FOOTBALL</Text><Text style={s.small}>{game.startsAt?new Date(game.startsAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'Season'}</Text></View>
     <View style={s.matchup}>{[game.away||game.featured.opposite,game.home||game.featured.title].map((team,i)=><React.Fragment key={team}>{i===1&&<Text style={s.at}>@</Text>}<View style={s.team}><TeamLogo name={team} size={46}/><Text style={s.teamName}>{team}</Text></View></React.Fragment>)}</View>
-    <View style={{gap:1}}>{game.markets.map(m=><Pressable key={m.id} disabled={disabled} accessibilityRole="button" accessibilityLabel={`${marketLabel(m)}: ${m.title} ${percent(m.price)}, ${m.opposite} ${percent(m.price===null?null:1-m.price)}. Open chart.`} onPress={()=>onOpen(m)} style={({pressed})=>[s.marketRow,{opacity:pressed?.65:1}]}>
-      <Text style={s.marketType}>{marketLabel(m)}</Text><View style={s.outcome}><Text numberOfLines={2} style={s.outcomeName}>{m.title}</Text><Text style={s.probability}>{percent(m.price)}</Text></View><View style={s.outcome}><Text numberOfLines={2} style={s.outcomeName}>{m.opposite}</Text><Text style={[s.probability,{color:colors.text}]}>{percent(m.price===null?null:1-m.price)}</Text></View><Icon name="arrow" size={15} color={colors.muted}/>
-    </Pressable>)}</View><Text style={s.cardFoot}>Market probabilities · {process.env.EXPO_PUBLIC_UI_PREVIEW==='true'?'Sample data':'Indicative prices'}</Text>
+    <View style={{gap:1}}>{game.markets.map(m=><View key={m.id}><Pressable disabled={disabled} accessibilityRole="button" accessibilityLabel={`${marketLabel(m)}: ${m.title} ${percent(m.price)}, ${m.opposite} ${percent(m.price===null?null:1-m.price)}. ${expanded===m.id?'Hide':'Show'} chart.`} accessibilityState={{expanded:expanded===m.id,disabled}} onPress={()=>setExpanded(current=>current===m.id?null:m.id)} style={({pressed})=>[s.marketRow,{opacity:pressed?.65:1}]}>
+      <Text style={s.marketType}>{marketLabel(m)}</Text><View style={s.outcome}><Text numberOfLines={2} style={s.outcomeName}>{m.title}</Text><Text style={s.probability}>{percent(m.price)}</Text></View><View style={s.outcome}><Text numberOfLines={2} style={s.outcomeName}>{m.opposite}</Text><Text style={[s.probability,{color:colors.text}]}>{percent(m.price===null?null:1-m.price)}</Text></View><View style={{transform:[{rotate:expanded===m.id?'90deg':'0deg'}]}}><Icon name="arrow" size={15} color={colors.muted}/></View>
+    </Pressable><ExpandingMarket open={expanded===m.id}><MarketPreviewChart market={m} api={api} updatedAt={updatedAt}/><View style={{flexDirection:'row',gap:10,paddingHorizontal:16,paddingBottom:8}}>{(['yes','no'] as const).map(side=>{const tone=outcomeTone(m,side),name=side==='yes'?m.title:m.opposite,quote=side==='yes'?m.yesAsk:m.noAsk,unavailable=disabled||quote===null;return <Pressable key={side} accessibilityRole="button" accessibilityLabel={`Buy ${name}`} accessibilityState={{disabled:unavailable}} disabled={unavailable} onPress={()=>onBuy(m,side)} style={({pressed})=>({flex:1,minHeight:52,padding:10,borderRadius:14,alignItems:'center',justifyContent:'center',backgroundColor:tone.primary,opacity:unavailable?.5:pressed?.7:1})}><Text style={{color:'#fff',fontWeight:'700',textAlign:'center'}}>Buy {name}</Text><Text style={{color:'#fff',fontSize:12,marginTop:4}}>{quote===null?'No quote':`${(quote*100).toFixed(1).replace(/\.0$/,'')}¢`}</Text></Pressable>;})}</View><Pressable accessibilityRole="button" disabled={disabled} onPress={()=>onOpen(m)} style={{minHeight:44,paddingHorizontal:16,justifyContent:'center',alignItems:'flex-end'}}><Text style={{color:colors.accent,fontWeight:'600'}}>Market details & trade →</Text></Pressable></ExpandingMarket></View>)}</View><Text style={s.cardFoot}>Market probabilities · {process.env.EXPO_PUBLIC_UI_PREVIEW==='true'?'Sample data':'Indicative prices'}</Text>
+  </View>;
+}
+function ExpandingMarket({open,children}:{open:boolean;children:React.ReactNode}){
+  const height=useRef(new Animated.Value(0)).current;
+  const [measured,setMeasured]=useState(0),[mounted,setMounted]=useState(open);
+  const reduced=useReducedMotion();
+  useEffect(()=>{if(open)setMounted(true);},[open]);
+  useEffect(()=>{
+    const animation=Animated.timing(height,{toValue:open?measured:0,duration:reduced?0:260,easing:Easing.inOut(Easing.cubic),useNativeDriver:false});
+    animation.start();
+    return()=>animation.stop();
+  },[open,measured,reduced,height]);
+  return <Animated.View pointerEvents={open?'auto':'none'} accessibilityElementsHidden={!open} importantForAccessibility={open?'auto':'no-hide-descendants'} style={{height,overflow:'hidden'}}>
+    {mounted&&<View onLayout={event=>setMeasured(event.nativeEvent.layout.height)} style={{position:'absolute',top:0,left:0,right:0}}>{children}</View>}
+  </Animated.View>;
+}
+export function MarketPreviewChart({market,api,updatedAt}:{market:Market;api:Api;updatedAt:number}){
+  const [data,setData]=useState<ChartData|null>(null),[status,setStatus]=useState('Loading price history…');
+  useEffect(()=>{
+    let active=true;
+    api<ChartData>(`market-detail?symbol=${encodeURIComponent(market.id)}&range=1D`).then(result=>{
+      if(active){setData(result);setStatus('');}
+    }).catch(()=>{if(active){setData(null);setStatus('Price history unavailable.');}});
+    return()=>{active=false;};
+  },[api,market.id,updatedAt]);
+  const samples=(data?.candles||[]).filter(c=>Number.isFinite(c.time)&&Number.isFinite(c.close)&&c.close>=0&&c.close<=1).sort((a,b)=>a.time-b.time);
+  const start=data?.start??samples[0]?.time??0,end=data?.end??samples.at(-1)?.time??1;
+  const x=(time:number)=>6+(time-start)/Math.max(1,end-start)*308,y=(price:number)=>6+(1-price)*68;
+  const line=(opposite:boolean)=>samples.map((c,i)=>`${i===0||c.time-samples[i-1].time>900000?'M':'L'}${x(c.time)},${y(opposite?1-c.close:c.close)}`).join(' ');
+  return <View style={{paddingHorizontal:16,paddingBottom:14,gap:5}}>
+    <View style={{flexDirection:'row',justifyContent:'space-between'}}><Text style={s.small}>Probability · past 24h</Text><Text style={s.small}>0–100%</Text></View>
+    {samples.length>1?<View accessibilityRole="image" accessibilityLabel={`Past 24 hours: ${market.title} in green; ${market.opposite} in purple. Probability from 0 to 100 percent.`}><Svg width="100%" height={80} viewBox="0 0 320 80">
+      {[0,.5,1].map(p=><Line key={p} x1={6} x2={314} y1={y(p)} y2={y(p)} stroke={colors.border} strokeDasharray="3 5"/>)}
+      <Path d={line(true)} fill="none" stroke={colors.plum} strokeWidth={1.8}/><Path d={line(false)} fill="none" stroke={colors.accent} strokeWidth={2.2}/>
+      <Circle cx={x(samples.at(-1)!.time)} cy={y(samples.at(-1)!.close)} r={3} fill={colors.accent}/>
+    </Svg></View>:<View style={{height:80,justifyContent:'center',alignItems:'center'}}><Text style={s.small}>{status||'No price history in the past 24 hours.'}</Text></View>}
+    <View style={{flexDirection:'row',gap:12,flexWrap:'wrap'}}>{[{name:market.title,color:colors.accent},{name:market.opposite,color:colors.plum}].map(item=><Text key={item.name} style={[s.small,{color:item.color}]}>● {item.name}</Text>)}</View>
   </View>;
 }
 export type ChartData={candles:Candle[]|null;start?:number;end?:number;fetchedAt?:number;range?:string};

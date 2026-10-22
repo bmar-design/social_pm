@@ -193,7 +193,9 @@ async function handler(req:Request){
    if(path[2]==='responses'&&req.method==='POST'){
     const proposal=str(body.proposalId,1,64),stance=body.stance;
     if(!['tail','fade','none'].includes(String(stance)))throw new Problem(400,'Choose tail or fade.');
-    if(!await q('SELECT 1 FROM proposals WHERE id=? AND group_id=?',proposal,id).first())throw new Problem(404,'Proposal not found.');
+    const post=await q('SELECT author FROM proposals WHERE id=? AND group_id=?',proposal,id).first<{author:string}>();
+    if(!post)throw new Problem(404,'Proposal not found.');
+    if(post.author===user.userId&&stance!=='none')throw new Problem(403,'You cannot tail or fade your own proposal.');
     if(stance==='none')await q('DELETE FROM responses WHERE proposal_id=? AND user_id=?',proposal,user.userId).run();
     else await q('INSERT INTO responses(proposal_id,user_id,stance,created) VALUES(?,?,?,?) ON CONFLICT(proposal_id,user_id) DO UPDATE SET stance=excluded.stance,created=excluded.created',proposal,user.userId,stance,now).run();
     return json({ok:true});

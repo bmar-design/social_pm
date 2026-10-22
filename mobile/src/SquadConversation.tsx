@@ -1,29 +1,67 @@
+import {readLay,type Lay} from './lays';
+import {LayCard} from './LayWorkflow';
+import {useReducedMotion} from './GlassTabs';
 import {GlassSurface} from './GlassSurface';
-import React, {useState, useEffect} from 'react';
-import Svg,{Path,Line,Circle,Text as SvgText} from 'react-native-svg';
-import {Pressable, Text, View, TextInput} from 'react-native';
+import React, {useState, useEffect, useRef, useId} from 'react';
+import Svg,{Path,Line,Circle,Defs,LinearGradient,Stop,Rect,Text as SvgText} from 'react-native-svg';
+import {Animated, Pressable, Text, View, TextInput} from 'react-native';
 import type {Api} from './api';
 import {colors, styles, Button, StanceButton, money} from './ui';
-import {ProbabilityChart, type ChartData, Icon, TeamLogo} from './FootballUI';
+import {ProbabilityChart, type ChartData, Icon, TeamLogo, teamColor} from './FootballUI';
 export type Proposal = {id:string;author:string;authorName:string;symbol:string;title:string;opposite:string;side:string;note:string;created:number;tails:number;fades:number;myStance?:string;trade_id?:string;tradeContracts?:number;tradeCost?:number;tradePrice?:number;tradeCreated?:number;contracts?:number;cost_cents?:number};
 type Message = {id:string;author:string;authorName:string;body:string;created:number};
 type Reaction = {target_id:string;emoji:string;count:number;mine:number};
-export function SquadConversation({proposals,messages,reactions,userId,busy,onSelect,onReact}:{proposals:Proposal[];messages:Message[];reactions:Reaction[];userId?:string;busy:boolean;onSelect:(id:string)=>void;onReact:(targetId:string,emoji:string,active:boolean)=>void}) {
+function SharedPick({proposal:p,busy,onSelect,onReact,children}:{proposal:Proposal;busy:boolean;onSelect:(id:string)=>void;onReact:()=>void;children:React.ReactNode}) {
+  const total=p.tails+p.fades, tailShare=total?p.tails/total:.5;
+  const tail=useRef(new Animated.Value(tailShare)).current,reduced=useReducedMotion();
+  const [split,setSplit]=useState(tailShare);
+  const gradientId=`pick-${useId().replace(/[^a-zA-Z0-9-]/g,'')}`;
+  useEffect(()=>{
+    const listener=tail.addListener(({value})=>setSplit(value));
+    return()=>tail.removeListener(listener);
+  },[tail]);
+  useEffect(()=>{
+    tail.stopAnimation();
+    if(reduced){tail.setValue(tailShare);setSplit(tailShare);return;}
+    const animation=Animated.timing(tail,{toValue:tailShare,duration:450,useNativeDriver:false});
+    animation.start();return()=>animation.stop();
+  },[tailShare,reduced,tail]);
+  const title=p.side==='yes'?p.title:p.opposite,opponent=p.side==='yes'?p.opposite:p.title;
+  const buyPrice=p.tradePrice!=null&&Number.isFinite(p.tradePrice)?`${Number((p.tradePrice/10000).toFixed(2))}¢`:null;
+  // Center the soft blend on the vote split; unanimous votes fill one color.
+  const blend=Math.min(.18,split,1-split);
+  return <Pressable accessibilityRole="button" accessibilityLabel={`View ${p.authorName}'s shared pick: ${title}. ${p.tails} Tail, ${p.fades} Fade.`} accessibilityHint="Hold to react." accessibilityActions={[{name:'react',label:'React to pick'}]} onAccessibilityAction={event=>{if(event.nativeEvent.actionName==='react')onReact();}} disabled={busy} onPress={()=>onSelect(p.id)} onLongPress={onReact} delayLongPress={400} style={{width:'90%',maxWidth:380,padding:15,gap:8,borderRadius:18,borderWidth:1,borderColor:colors.border,backgroundColor:colors.card,overflow:'hidden'}}>
+    {!!total&&<View pointerEvents="none" style={{position:'absolute',top:0,bottom:0,left:0,right:0,opacity:.12}}>
+      <Svg width="100%" height="100%">
+        <Defs><LinearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+          <Stop offset={`${(split-blend)*100}%`} stopColor={split===0?teamColor(opponent):teamColor(title)}/>
+          <Stop offset={`${(split+blend)*100}%`} stopColor={split===1?teamColor(title):teamColor(opponent)}/>
+        </LinearGradient></Defs>
+        <Rect width="100%" height="100%" fill={`url(#${gradientId})`}/>
+      </Svg>
+    </View>}
+    <View style={{gap:12}}>
+      <Text style={[styles.label,{color:colors.muted,fontSize:11}]}>SHARED PICK</Text>
+      <View style={{flexDirection:'row',gap:12,alignItems:'center'}}><TeamLogo name={title} size={38}/><View style={{flex:1,gap:3}}><Text style={{color:colors.text,fontSize:18,lineHeight:24,fontWeight:'600'}}>{title}</Text><Text style={{color:colors.muted,fontSize:12,lineHeight:18}}>vs {opponent} · {buyPrice?`Bought at ${buyPrice}`:'Buy price unavailable'}</Text></View><Icon name="arrow" size={16}/></View>
+      {!!p.note&&<Text style={styles.text}>{p.note}</Text>}
+      <View style={{flexDirection:'row',flexWrap:'wrap',justifyContent:'space-between',gap:8,paddingTop:12,borderTopWidth:1,borderTopColor:colors.border}}><Text style={{color:colors.text,fontSize:12}}>{p.tails} Tail · {p.fades} Fade</Text><Text style={{color:colors.muted,fontSize:12}}>View position →</Text></View>
+    </View>
+    {children}
+  </Pressable>;
+}
+export function SquadConversation({proposals,messages,reactions,userId,busy,onSelect,onReact,onLay}:{proposals:Proposal[];messages:Message[];reactions:Reaction[];userId?:string;busy:boolean;onSelect:(id:string)=>void;onReact:(targetId:string,emoji:string,active:boolean)=>void;onLay:(lay:Lay,id:string)=>void}) {
   const [picker,setPicker]=useState<string|null>(null);
+  const messageMeta=(p:Message|Proposal)=><Text style={{color:colors.muted,fontSize:11,textAlign:'right'}}>{new Date(p.created).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}</Text>;
   const ordered=[...proposals.map(p=>({...p,kind:'proposal' as const})),...messages.map(m=>({...m,kind:'message' as const}))].sort((a,b)=>a.created-b.created);
-  return <View style={{gap:18}}>{!ordered.length&&<Text style={[styles.muted,{textAlign:'center',padding:24}]}>Start the conversation. Say hello to your group.</Text>}{ordered.map((p,i)=>{const own=p.author===userId, previous=ordered[i-1], attached=reactions.filter(r=>r.target_id===p.id);return <View key={p.kind+p.id} style={{gap:10}}>
+  return <View style={{gap:18}}>{!ordered.length&&<Text style={[styles.muted,{textAlign:'center',padding:24}]}>Start the conversation. Say hello to your group.</Text>}{ordered.map((p,i)=>{const lay=p.kind==='message'?readLay(p.body):null, own=p.author===userId, previous=ordered[i-1], attached=reactions.filter(r=>r.target_id===p.id);return <View key={p.kind+p.id} style={{gap:10}}>
     {(!previous||new Date(previous.created).toDateString()!==new Date(p.created).toDateString())&&<Text style={[styles.muted,{textAlign:'center',fontSize:11}]}>{new Date(p.created).toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'})}</Text>}
     <View style={{alignItems:own?'flex-end':'flex-start',gap:5}}><Text style={[styles.muted,{fontSize:11,marginHorizontal:8}]}>{own?'You':p.authorName}</Text>
-      <View style={{maxWidth:'88%',padding:12,gap:9,borderRadius:18,borderBottomLeftRadius:own?18:4,borderBottomRightRadius:own?4:18,backgroundColor:own?colors.accentSoft:colors.card}}>
-        {p.kind==='message'?<Text selectable style={styles.text}>{p.body}</Text>:<>
-          {!!p.note&&<Text style={styles.text}>{p.note}</Text>}
-          <Pressable accessibilityRole="button" accessibilityLabel={`View ${p.authorName}'s proposal in Positions`} disabled={busy} onPress={()=>onSelect(p.id)} style={{padding:11,borderRadius:12,backgroundColor:colors.bg,borderLeftWidth:3,borderLeftColor:colors.primary,gap:7}}>
-            <Text style={styles.label}>PROPOSAL</Text><View style={{flexDirection:'row',gap:8,alignItems:'center'}}><TeamLogo name={p.side==='yes'?p.title:p.opposite} size={26}/><Text style={[styles.text,{flexShrink:1,fontWeight:'600',fontSize:14}]}>{p.side==='yes'?p.title:p.opposite}</Text><Icon name="arrow" size={15}/></View><Text style={[styles.muted,{fontSize:11}]}>{p.tails} Tail · {p.fades} Fade · View position</Text>
-          </Pressable></>}
-        <View style={{flexDirection:'row',gap:12,alignItems:'center',justifyContent:'flex-end'}}><Text style={[styles.muted,{fontSize:10}]}>{new Date(p.created).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}</Text><Pressable accessibilityRole="button" accessibilityLabel={`React to ${p.authorName}'s message`} onPress={()=>setPicker(picker===p.id?null:p.id)} style={{minWidth:44,minHeight:32,alignItems:'center',justifyContent:'center'}}><Text style={{color:colors.muted,fontSize:16}}>☺ +</Text></Pressable></View>
-      </View>
+      {p.kind==='proposal'?<SharedPick proposal={p} busy={busy} onSelect={onSelect} onReact={()=>setPicker(p.id)}>{messageMeta(p)}</SharedPick>:<Pressable accessibilityRole="button" accessibilityLabel={`${p.authorName}: ${lay?lay.name:p.body}`} accessibilityHint="Hold to react." accessibilityActions={[{name:'react',label:'React to message'}]} onAccessibilityAction={event=>{if(event.nativeEvent.actionName==='react'&&!busy)setPicker(p.id);}} disabled={busy} onLongPress={()=>setPicker(p.id)} delayLongPress={400} style={{maxWidth:'88%',padding:12,gap:9,borderRadius:18,borderBottomLeftRadius:own?18:4,borderBottomRightRadius:own?4:18,backgroundColor:own?colors.accentSoft:colors.card}}>
+        <>{lay?<LayCard lay={lay} author={p.authorName} onOpen={()=>onLay(lay,p.id)}/>:<Text style={styles.text}>{p.body}</Text>}</>
+        {messageMeta(p)}
+      </Pressable>}
       {!!attached.length&&<View style={{flexDirection:'row',flexWrap:'wrap',gap:5,maxWidth:'88%'}}>{attached.map(r=><Pressable key={r.emoji} accessibilityRole="button" accessibilityLabel={`${r.emoji}, ${r.count} reactions`} accessibilityState={{selected:!!r.mine}} disabled={busy} onPress={()=>onReact(p.id,r.emoji,!r.mine)} style={{padding:8,borderRadius:18,borderWidth:1,borderColor:r.mine?colors.accent:colors.border,backgroundColor:r.mine?colors.accentSoft:colors.card}}><Text>{r.emoji} {r.count}</Text></Pressable>)}</View>}
-      {picker===p.id&&<View style={{flexDirection:'row',flexWrap:'wrap',borderRadius:22,backgroundColor:colors.card,padding:4}}>{['👍','❤️','😂','🔥','👀','👎'].map(emoji=><Pressable key={emoji} accessibilityRole="button" accessibilityLabel={`React ${emoji}`} disabled={busy} onPress={()=>{onReact(p.id,emoji,!attached.find(r=>r.emoji===emoji)?.mine);setPicker(null);}} style={{padding:10,minHeight:44}}><Text style={{fontSize:22}}>{emoji}</Text></Pressable>)}</View>}
+      {picker===p.id&&<View style={{flexDirection:'row',flexWrap:'wrap',borderRadius:22,backgroundColor:colors.card,padding:4}}>{['👍','❤️','😂','🔥','👀','👎'].map(emoji=><Pressable key={emoji} accessibilityRole="button" accessibilityLabel={`React ${emoji}`} disabled={busy} onPress={()=>{onReact(p.id,emoji,!attached.find(r=>r.emoji===emoji)?.mine);setPicker(null);}} style={{padding:10,minHeight:44}}><Text style={{fontSize:22}}>{emoji}</Text></Pressable>)}<Pressable accessibilityRole="button" accessibilityLabel="Close reactions" onPress={()=>setPicker(null)} style={{padding:10,minHeight:44,justifyContent:'center'}}><Text style={styles.muted}>✕</Text></Pressable></View>}
     </View></View>})}
   </View>;
 }
@@ -53,7 +91,7 @@ export function ProposalPosition({proposal,proposals,busy,api,onBack,onMarket,on
   const buys=peers.filter(p=>{const key=p.trade_id||p.id;const valid=(p.tradeContracts??p.contracts??0)>0;if(!valid||seen.has(key))return false;seen.add(key);return true;});
   const users=Array.from(new Set(buys.map(p=>p.author))).map(id=>({id,name:buys.find(p=>p.author===id)!.authorName,contracts:buys.filter(p=>p.author===id).reduce((n,p)=>n+(p.tradeContracts??p.contracts??0),0)}));
   const max=Math.max(1,...users.map(u=>u.contracts));
-  return <View style={{gap:18}}><PositionPriceChart key={proposal.symbol} proposal={proposal} peers={peers} api={api}/><Button title="Hide details" secondary onPress={onBack}/><View style={styles.card}><Text style={styles.label}>PROPOSAL · {proposal.authorName}</Text><Text style={styles.title}>{proposal.side==='yes'?proposal.title:proposal.opposite}</Text><Text style={styles.muted}>{proposal.title} / {proposal.opposite}</Text>{!!proposal.note&&<Text style={styles.text}>{proposal.note}</Text>}<Text style={styles.muted}>{new Date(proposal.created).toLocaleString()}</Text>{(proposal.tradeContracts??proposal.contracts)!=null&&<Text style={styles.text}>{proposal.tradeContracts??proposal.contracts} contracts · {money(proposal.tradeCost??proposal.cost_cents??0)} practice buy</Text>}<View style={styles.row}>{(['tail','fade'] as const).map(stance=><StanceButton key={stance} stance={stance} count={stance==='tail'?proposal.tails:proposal.fades} selected={proposal.myStance===stance} disabled={busy} onPress={()=>onRespond(proposal.myStance===stance?'none':stance)}/>)}</View><Text style={[styles.muted,{fontSize:11}]}>Responses are opinions. No order is placed.</Text><Button title="Market details & price chart" secondary disabled={busy} onPress={onMarket}/></View>
+  return <View style={{gap:18}}><Text style={styles.title}>{proposal.authorName}’s Proposal</Text><PositionPriceChart key={proposal.symbol} proposal={proposal} peers={peers} api={api}/><Button title="Hide details" secondary onPress={onBack}/><View style={styles.card}><Text style={styles.label}>PROPOSAL · {proposal.authorName}</Text><Text style={styles.title}>{proposal.side==='yes'?proposal.title:proposal.opposite}</Text><Text style={styles.muted}>{proposal.title} / {proposal.opposite}</Text>{!!proposal.note&&<Text style={styles.text}>{proposal.note}</Text>}<Text style={styles.muted}>{new Date(proposal.created).toLocaleString()}</Text>{(proposal.tradeContracts??proposal.contracts)!=null&&<Text style={styles.text}>{proposal.tradeContracts??proposal.contracts} contracts · {money(proposal.tradeCost??proposal.cost_cents??0)} practice buy</Text>}<View style={styles.row}>{(['tail','fade'] as const).map(stance=><StanceButton key={stance} stance={stance} count={stance==='tail'?proposal.tails:proposal.fades} selected={proposal.myStance===stance} disabled={busy} onPress={()=>onRespond(proposal.myStance===stance?'none':stance)}/>)}</View><Text style={[styles.muted,{fontSize:11}]}>Responses are opinions. No order is placed.</Text><Button title="Market details & price chart" secondary disabled={busy} onPress={onMarket}/></View>
     <View style={styles.card}><Text style={styles.heading}>Buys / sells by user</Text><Text style={styles.muted}>Shared practice buys · contracts</Text><View style={styles.row}><Text style={{color:colors.accent}}>● Buys</Text><Text style={{color:colors.plum}}>● Sells unavailable</Text></View>
       {users.length?users.map(u=><View key={u.id} accessibilityLabel={`${u.name}: ${u.contracts} bought contracts; sell data unavailable`} style={{gap:7}}><View style={{flexDirection:'row',justifyContent:'space-between'}}><Text style={styles.text}>{u.name}</Text><Text style={styles.muted}>{u.contracts} bought</Text></View><View style={{height:14,borderRadius:7,backgroundColor:colors.accentSoft,overflow:'hidden'}}><View style={{height:14,width:`${u.contracts/max*100}%`,backgroundColor:colors.primary,borderRadius:7}}/></View></View>):<Text style={styles.muted}>No buys have been shared for this market yet.</Text>}
       <Text style={[styles.muted,{fontSize:11}]}>Only shared buys appear here. Sell activity is not recorded yet. Tail/Fade responses are not trades.</Text>
